@@ -9,6 +9,8 @@ typedef int cpu_info_t[10];
 
 float get_cpu_load(cpu_info_t cpu_info);
 
+void save_to_csv(char *file_name, float cpu_loads[ITERATIONS]);
+
 int main(int argc, char **argv) {
 
     int ret;
@@ -16,7 +18,7 @@ int main(int argc, char **argv) {
     cpu_info_t last_cpu_info = {0};
     cpu_info_t current_cpu_info = {0};
     FILE *stat;
-    float cpu_loads[10];
+    float cpu_loads[ITERATIONS];
 
     stat = fopen("/proc/stat", "r");
     fscanf(stat, "%s %d %d %d %d %d %d %d %d %d %d", cpu, &last_cpu_info[0],
@@ -57,5 +59,16 @@ int main(int argc, char **argv) {
         cpu_loads[i] = cpu_load;
         memcpy(last_cpu_info, current_cpu_info, 10 * sizeof(float));
     }
+
+    save_to_csv("cpu_load.csv", cpu_loads);
     return 0;
+}
+
+void save_to_csv(char *file_name, float cpu_loads[ITERATIONS]) {
+    FILE *file = fopen(file_name, "w");
+    for (int i = 0; i < ITERATIONS; i++) {
+        // print to two decimal places
+        fprintf(file, "%.2f\n", cpu_loads[i]);
+    }
+    fclose(file);
 }
