@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <argp.h>
 
 #define INTERVAL 1
 #define ITERATIONS 10
@@ -11,7 +12,36 @@ float get_cpu_load(cpu_info_t cpu_info);
 
 void save_to_csv(char *file_name, float cpu_loads[ITERATIONS]);
 
+const char *argp_program_version = "system_info 0.1.0";
+const char *argp_program_bug_address = "michalsledz34@gmail.com";
+static char doc[] = "system_info -- measure your system CPU load";
+static struct argp_option options[] = {
+    {"file", 'f', "FILE", 0, "Save results to a file"}
+};
+
+struct arguments {
+    char *file;
+};
+
+static error_t parse_opt(int key, char *arg, struct argp_state *state) {
+    struct arguments *arguments = state->input;
+    switch(key) {
+        case 'f':
+            arguments->file = arg;
+            break;
+        default: 
+            return ARGP_ERR_UNKNOWN;
+    }
+
+    return 0;
+}
+
+static struct argp argp = {options, parse_opt, 0, doc};
+
 int main(int argc, char **argv) {
+    struct arguments arguments;
+    arguments.file = "cpu_load.csv";
+    argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
     int ret;
     char cpu[10] = {0};
@@ -60,7 +90,7 @@ int main(int argc, char **argv) {
         memcpy(last_cpu_info, current_cpu_info, 10 * sizeof(float));
     }
 
-    save_to_csv("cpu_load.csv", cpu_loads);
+    save_to_csv(arguments.file, cpu_loads);
     return 0;
 }
 
