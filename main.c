@@ -20,7 +20,19 @@ struct arguments {
     unsigned int time;
 };
 
-typedef int cpu_info_t[10];
+struct cpu_info {
+    char name[10];
+    long long user;
+    long long nice;
+    long long system;
+    long long idle;
+    long long iowait;
+    long long irq;
+    long long softirq;
+    long long steal;
+    long long guest;
+    long long guest_nice;
+};
 
 void save_to_csv(char *file_name, float *cpu_loads, unsigned int size);
 
@@ -70,49 +82,44 @@ int main(int argc, char **argv) {
     unsigned int iterations = arguments.time / arguments.interval;
     printf("Iterations: %d\n", iterations);
     char cpu[10] = {0};
-    cpu_info_t last_cpu_info = {0};
-    cpu_info_t current_cpu_info = {0};
+    struct cpu_info last_cpu_info;
+    struct cpu_info current_cpu_info;
     FILE *stat;
     float *cpu_loads = calloc(iterations, sizeof(float));;
 
     stat = fopen("/proc/stat", "r");
-    fscanf(stat, "%s %d %d %d %d %d %d %d %d %d %d", cpu, &last_cpu_info[0],
-           &last_cpu_info[1], &last_cpu_info[2], &last_cpu_info[3],
-           &last_cpu_info[4], &last_cpu_info[5], &last_cpu_info[6],
-           &last_cpu_info[7], &last_cpu_info[8], &last_cpu_info[9]);
+    fscanf(stat, "%s %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld", last_cpu_info.name, &last_cpu_info.user,
+           &last_cpu_info.nice, &last_cpu_info.system, &last_cpu_info.idle,
+           &last_cpu_info.iowait, &last_cpu_info.irq, &last_cpu_info.softirq,
+           &last_cpu_info.steal, &last_cpu_info.guest, &last_cpu_info.guest_nice);
     fclose(stat);
     for (int i = 0; i < iterations; i++) {
         sleep(arguments.interval);
         stat = fopen("/proc/stat", "r");
-        fscanf(stat, "%s %d %d %d %d %d %d %d %d %d %d", cpu, &current_cpu_info[0],
-               &current_cpu_info[1], &current_cpu_info[2], &current_cpu_info[3],
-               &current_cpu_info[4], &current_cpu_info[5], &current_cpu_info[6],
-               &current_cpu_info[7], &current_cpu_info[8], &current_cpu_info[9]);
+        fscanf(stat, "%s %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld", current_cpu_info.name, &current_cpu_info.user,
+               &current_cpu_info.nice, &current_cpu_info.system, &current_cpu_info.idle,
+               &current_cpu_info.iowait, &current_cpu_info.irq, &current_cpu_info.softirq,
+               &current_cpu_info.steal, &current_cpu_info.guest, &current_cpu_info.guest_nice);
 
         fclose(stat);
-        printf("%s %d %d %d %d %d %d %d %d %d %d\n", cpu, current_cpu_info[0],
-               current_cpu_info[1], current_cpu_info[2], current_cpu_info[3],
-               current_cpu_info[4], current_cpu_info[5], current_cpu_info[6],
-               current_cpu_info[7], current_cpu_info[8], current_cpu_info[9]);
 
-        long current_busy_time = current_cpu_info[0] + current_cpu_info[1] +
-                                 current_cpu_info[2] + current_cpu_info[5] +
-                                 current_cpu_info[6] + current_cpu_info[7];
+        long current_busy_time = current_cpu_info.user + current_cpu_info.nice +
+                                 current_cpu_info.system + current_cpu_info.irq +
+                                 current_cpu_info.softirq + current_cpu_info.steal;
         long current_total_time =
-                current_busy_time + current_cpu_info[3] + current_cpu_info[4];
+                current_busy_time + current_cpu_info.idle + current_cpu_info.iowait;
 
-        long last_busy_time = last_cpu_info[0] + last_cpu_info[1] +
-                              last_cpu_info[2] + last_cpu_info[5] +
-                              last_cpu_info[6] + last_cpu_info[7];
-        long last_total_time = last_busy_time + last_cpu_info[3] + last_cpu_info[4];
+        long last_busy_time = last_cpu_info.user + last_cpu_info.nice +
+                              last_cpu_info.system + last_cpu_info.irq +
+                              last_cpu_info.softirq + last_cpu_info.steal;
+        long last_total_time = last_busy_time + last_cpu_info.idle + last_cpu_info.iowait;
 
         float totald = current_total_time - last_total_time;
         float busyd = current_busy_time - last_busy_time;
-        printf("totald: %f, busyd: %f", totald, busyd);
         float cpu_load = busyd / totald * 100.0f;
-        printf("CPU load: %f%%\n", cpu_load);
+        fprintf(stdout, "totald: %f, busyd: %f, load: %f%%\n", totald, busyd, cpu_load);
         cpu_loads[i] = cpu_load;
-        memcpy(last_cpu_info, current_cpu_info, 10 * sizeof(float));
+        last_cpu_info = current_cpu_info;
     }
 
     save_to_csv(arguments.file, cpu_loads, iterations);
