@@ -116,6 +116,7 @@ int main(int argc, char **argv) {
     }
 
     save_to_csv(arguments.file, cpu_loads, iterations);
+    free(cpu_loads);
     return 0;
 }
 
