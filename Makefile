@@ -1,7 +1,6 @@
-compile:
-	gcc main.c -o main
+CC = gcc
+CFLAGS = -Wall
 
-run:
-	./main
+compile: main.c
+	$(CC) $(CFLAGS) $< -o system_info
 
-.PHONY: compile run
