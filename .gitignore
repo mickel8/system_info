@@ -1,2 +1,4 @@
-main
 .idea/
+*.csv
+system_info
+
