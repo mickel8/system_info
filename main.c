@@ -81,7 +81,6 @@ int main(int argc, char **argv) {
 
     unsigned int iterations = arguments.time / arguments.interval;
     printf("Iterations: %d\n", iterations);
-    char cpu[10] = {0};
     struct cpu_info last_cpu_info;
     struct cpu_info current_cpu_info;
     FILE *stat;
