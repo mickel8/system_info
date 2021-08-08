@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <argp.h>
+#include <time.h>
 
 const char *argp_program_version = "system_info 0.1.0";
 const char *argp_program_bug_address = "michalsledz34@gmail.com";
@@ -71,16 +72,21 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
 static struct argp argp = {options, parse_opt, 0, doc};
 
 int main(int argc, char **argv) {
+    unsigned long timestamp = (unsigned long)time(NULL);
+    int timestamp_len = snprintf(NULL, 0, "%lu", timestamp);
+    char *file_name = (char *)malloc(timestamp_len + 1 + 4); // +1 for NULL byte and +4 for .csv extenstion 
+    snprintf(file_name, timestamp_len + 1 + 4, "%lu.csv", timestamp);
+
     struct arguments arguments;
-    arguments.file = "cpu_load.csv";
+    arguments.file = file_name;
     arguments.interval = 1;
-    arguments.time = 10;
+    arguments.time = 60;
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
     print_args(arguments);
 
     unsigned int iterations = arguments.time / arguments.interval;
-    printf("Iterations: %d\n", iterations);
+    fprintf(stdout, "Iterations: %d\n", iterations);
     struct cpu_info last_cpu_info;
     struct cpu_info current_cpu_info;
     FILE *stat;
@@ -123,6 +129,7 @@ int main(int argc, char **argv) {
 
     save_to_csv(arguments.file, cpu_loads, iterations);
     free(cpu_loads);
+    free(file_name);
     return 0;
 }
 
